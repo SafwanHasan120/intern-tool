@@ -48,7 +48,7 @@ export default function ResumeModal() {
             type="button"
             onClick={close}
             aria-label="Close"
-            className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900"
+            className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="h-5 w-5" aria-hidden="true">
               <path d="M6 6l12 12M18 6 6 18" />
@@ -61,7 +61,7 @@ export default function ResumeModal() {
           <div>
             <label
               htmlFor="resume-latex"
-              className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400"
+              className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500"
             >
               Raw LaTeX
             </label>
@@ -71,7 +71,7 @@ export default function ResumeModal() {
               value={settings.latex}
               placeholder="Paste your resume LaTeX here…"
               onChange={(e) => updateLatex(e.target.value)}
-              className="w-full resize-y rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-3 font-mono text-sm leading-relaxed text-gray-900 placeholder:text-gray-400 transition-all duration-300 focus:border-accent focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
+              className="w-full resize-y rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-3 font-mono text-sm leading-relaxed text-gray-900 placeholder:text-gray-500 transition-all duration-300 focus:border-accent focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
             />
           </div>
 
@@ -80,7 +80,7 @@ export default function ResumeModal() {
               <div key={field.key} className="last:sm:col-span-2">
                 <label
                   htmlFor={`adj-${field.key}`}
-                  className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400"
+                  className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500"
                 >
                   {field.label}
                 </label>
@@ -90,7 +90,7 @@ export default function ResumeModal() {
                   placeholder={field.placeholder}
                   value={String(settings.adjustments[field.key] ?? '')}
                   onChange={(e) => updateAdjustment(field.key, e.target.value)}
-                  className="w-full rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 transition-all duration-300 focus:border-accent focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
+                  className="w-full rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 transition-all duration-300 focus:border-accent focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
                 />
               </div>
             ))}

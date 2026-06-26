@@ -137,19 +137,19 @@ export default function InternshipTable({ internships }: Props) {
       <div className="rounded-3xl border border-gray-200/80 bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_12px_40px_-12px_rgba(0,0,0,0.08)] sm:p-7">
         {/* Search */}
         <div className="relative">
-          <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+          <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
           <input
             type="text"
             placeholder="Search by company, role, or location…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-gray-50/60 py-3.5 pl-12 pr-4 text-sm text-gray-900 placeholder:text-gray-400 transition-all duration-300 focus:border-accent focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
+            className="w-full rounded-2xl border border-gray-200 bg-gray-50/60 py-3.5 pl-12 pr-4 text-sm text-gray-900 placeholder:text-gray-500 transition-all duration-300 focus:border-accent focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
           />
         </div>
 
         {/* Roles */}
         <div className="mt-6">
-          <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+          <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
             Discipline
           </div>
           <div className="flex flex-wrap gap-2">
@@ -172,7 +172,7 @@ export default function InternshipTable({ internships }: Props) {
 
         {/* Locations */}
         <div className="mt-6">
-          <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+          <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
             Location
           </div>
           <div className="flex flex-wrap gap-2">
@@ -186,9 +186,9 @@ export default function InternshipTable({ internships }: Props) {
                   onClick={() => setActiveLocs((s) => toggle(s, loc))}
                   className={`${PILL_BASE} ${on ? PILL_ON : PILL_OFF}`}
                 >
-                  <PinIcon className={`h-3.5 w-3.5 ${on ? 'text-emerald-300' : 'text-gray-400'}`} />
+                  <PinIcon className={`h-3.5 w-3.5 ${on ? 'text-emerald-300' : 'text-gray-500'}`} />
                   {loc}
-                  <span className={`ml-0.5 tabular-nums ${on ? 'text-white/60' : 'text-gray-400'}`}>
+                  <span className={`ml-0.5 tabular-nums ${on ? 'text-white/60' : 'text-gray-500'}`}>
                     {count}
                   </span>
                 </button>
@@ -209,7 +209,7 @@ export default function InternshipTable({ internships }: Props) {
           <button
             type="button"
             onClick={clearAll}
-            className="text-xs font-medium text-gray-400 underline-offset-4 transition-colors hover:text-accent hover:underline"
+            className="text-xs font-medium text-gray-500 underline-offset-4 transition-colors hover:text-accent hover:underline"
           >
             Clear all
           </button>
@@ -224,7 +224,7 @@ export default function InternshipTable({ internships }: Props) {
               {['Company', 'Position', 'Location', 'Posted', '', ''].map((h, idx) => (
                 <th
                   key={idx}
-                  className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400"
+                  className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500"
                 >
                   {h}
                 </th>
@@ -260,7 +260,7 @@ export default function InternshipTable({ internships }: Props) {
                     {i.location}
                   </span>
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 align-middle text-sm tabular-nums text-gray-400">
+                <td className="whitespace-nowrap px-6 py-4 align-middle text-sm tabular-nums text-gray-500">
                   {i.datePosted}
                 </td>
                 <td className="px-6 py-4 align-middle">
@@ -275,7 +275,7 @@ export default function InternshipTable({ internships }: Props) {
                       <ArrowUpRight className="h-3.5 w-3.5" />
                     </a>
                   ) : (
-                    <span className="text-xs text-gray-300">—</span>
+                    <span className="text-xs text-gray-500">—</span>
                   )}
                 </td>
                 <td className="px-6 py-4 align-middle">
@@ -320,7 +320,7 @@ export default function InternshipTable({ internships }: Props) {
                 )}
                 <p className="mt-1 text-sm leading-snug text-gray-600">{i.role}</p>
               </div>
-              <span className="shrink-0 whitespace-nowrap text-xs tabular-nums text-gray-400">
+              <span className="shrink-0 whitespace-nowrap text-xs tabular-nums text-gray-500">
                 {i.datePosted}
               </span>
             </div>
@@ -342,7 +342,7 @@ export default function InternshipTable({ internships }: Props) {
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </a>
               ) : (
-                <span className="flex-1 text-center text-xs text-gray-300">No link</span>
+                <span className="flex-1 text-center text-xs text-gray-500">No link</span>
               )}
               <button
                 type="button"

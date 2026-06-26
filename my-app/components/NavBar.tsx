@@ -13,7 +13,7 @@ export default function NavBar() {
           <span className="font-serif text-xl font-semibold tracking-tight text-gray-900 sm:text-2xl">
             Summer&nbsp;<span className="text-accent">’27</span>
           </span>
-          <span className="hidden text-[11px] font-medium uppercase tracking-[0.22em] text-gray-400 sm:inline">
+          <span className="hidden text-[11px] font-medium uppercase tracking-[0.22em] text-gray-500 sm:inline">
             Internships
           </span>
         </div>

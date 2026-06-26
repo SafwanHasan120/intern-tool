@@ -6,6 +6,7 @@
   Light only: a premium spa interface never flips to dark.
 */
 :root {
+  color-scheme: light;     /* pin to light — never follow macOS dark mode */
   --background: #fcfcfb;   /* warm off-white, not stark */
   --foreground: #1a1a1a;   /* charcoal ink */
   --accent: #047857;       /* emerald-700 — the single alternate color */
@@ -22,6 +23,8 @@
 }
 
 html {
+  color-scheme: light;
+  background: var(--background);
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
 }
