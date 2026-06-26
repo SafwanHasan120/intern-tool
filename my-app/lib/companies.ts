@@ -1,0 +1,91 @@
+// Prestige tiers for ranking. O(1) lookup via Set. Keys are lowercased.
+
+const TIER1_LIST = [
+  'google',
+  'alphabet',
+  'meta',
+  'facebook',
+  'apple',
+  'amazon',
+  'microsoft',
+  'netflix',
+  'nvidia',
+  'openai',
+  'anthropic',
+  'jane street',
+  'citadel',
+  'citadel securities',
+  'hudson river trading',
+  'hrt',
+  'two sigma',
+  'jump trading',
+  'optiver',
+  'de shaw',
+  'd. e. shaw',
+  'tesla',
+  'spacex',
+  'databricks',
+  'stripe',
+  'palantir',
+];
+
+const TIER2_LIST = [
+  'uber',
+  'lyft',
+  'airbnb',
+  'linkedin',
+  'salesforce',
+  'adobe',
+  'oracle',
+  'ibm',
+  'intel',
+  'amd',
+  'qualcomm',
+  'paypal',
+  'block',
+  'square',
+  'coinbase',
+  'robinhood',
+  'snowflake',
+  'datadog',
+  'cloudflare',
+  'snap',
+  'snapchat',
+  'pinterest',
+  'doordash',
+  'instacart',
+  'dropbox',
+  'twilio',
+  'atlassian',
+  'roblox',
+  'bloomberg',
+  'goldman sachs',
+  'morgan stanley',
+  'jpmorgan',
+  'jp morgan',
+  'capital one',
+  'akuna capital',
+  'imc',
+  'imc trading',
+  'drw',
+  'sig',
+  'susquehanna',
+  'point72',
+  'samsung',
+  'sony',
+  'spotify',
+  'reddit',
+  'plaid',
+  'figma',
+  'notion',
+];
+
+export const TIER1 = new Set(TIER1_LIST);
+export const TIER2 = new Set(TIER2_LIST);
+
+export function prestigeOf(company: string): number {
+  const c = company.trim().toLowerCase();
+  if (TIER1.has(c)) return 1.0;
+  if (TIER2.has(c)) return 0.5;
+  return 0.0;
+}
