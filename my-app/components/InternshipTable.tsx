@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Fuse from 'fuse.js';
 import { useFavorites } from '@/context/FavoritesContext';
 import type { Internship } from '@/lib/types';
@@ -8,6 +8,7 @@ import type { Internship } from '@/lib/types';
 interface Props {
   internships: Internship[];
   showFavorites?: boolean;
+  onlyFavorites?: boolean;
 }
 
 // 8 role buckets, matched by regex against i.role.
@@ -75,17 +76,51 @@ function HeartIcon({ filled, className }: { filled?: boolean; className?: string
     </svg>
   );
 }
+function CaretIcon({ direction, className }: { direction?: 'up' | 'down' | null; className?: string }) {
+  if (direction === 'up') {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+        <path d="M7 14l5-5 5 5z" />
+      </svg>
+    );
+  }
+  if (direction === 'down') {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+        <path d="M7 10l5 5 5-5z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true" opacity={0.3}>
+      <path d="M7 10l5 5 5-5z" />
+    </svg>
+  );
+}
 
 const PILL_BASE =
   'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all duration-200 cursor-pointer select-none';
 const PILL_ON = 'border-transparent bg-gray-900 text-white shadow-sm';
 const PILL_OFF = 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:text-gray-900';
 
-export default function InternshipTable({ internships, showFavorites = true }: Props) {
+type SortDirection = 'asc' | 'desc' | null;
+
+export default function InternshipTable({ internships, showFavorites = true, onlyFavorites = false }: Props) {
   const [query, setQuery] = useState('');
   const [activeLocs, setActiveLocs] = useState<Set<string>>(new Set());
   const [activeRoles, setActiveRoles] = useState<Set<string>>(new Set());
+  const [sortDir, setSortDir] = useState<SortDirection>(null);
   const { isFavorite, toggleFavorite } = useFavorites();
+
+  // Reset filters when switching to Favorites view
+  useEffect(() => {
+    if (onlyFavorites) {
+      setQuery('');
+      setActiveLocs(new Set());
+      setActiveRoles(new Set());
+      setSortDir(null);
+    }
+  }, [onlyFavorites]);
 
   const fuse = useMemo(
     () =>
@@ -140,6 +175,18 @@ export default function InternshipTable({ internships, showFavorites = true }: P
 
     return rows;
   }, [query, fuse, internships, activeLocs, activeRoles]);
+
+  // Apply sorting to filtered results
+  const sorted = useMemo(() => {
+    if (!sortDir) return filtered;
+    const copy = [...filtered];
+    copy.sort((a, b) => {
+      const aDate = a.dateMs || 0;
+      const bDate = b.dateMs || 0;
+      return sortDir === 'asc' ? aDate - bDate : bDate - aDate;
+    });
+    return copy;
+  }, [filtered, sortDir]);
 
   const hasFilters = query.trim() !== '' || activeLocs.size > 0 || activeRoles.size > 0;
   const clearAll = () => {
@@ -247,8 +294,20 @@ export default function InternshipTable({ internships, showFavorites = true }: P
               <th className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
                 Location
               </th>
-              <th className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
-                Posted
+              <th className="px-6 py-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (sortDir === null) setSortDir('desc');
+                    else if (sortDir === 'desc') setSortDir('asc');
+                    else setSortDir(null);
+                  }}
+                  className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500 hover:text-gray-700 transition-colors"
+                  title="Click to sort by date"
+                >
+                  Posted
+                  <CaretIcon direction={sortDir === 'desc' ? 'down' : sortDir === 'asc' ? 'up' : null} className="h-3.5 w-3.5" />
+                </button>
               </th>
               {showFavorites && (
                 <th className="px-6 py-4 text-center">
@@ -264,7 +323,7 @@ export default function InternshipTable({ internships, showFavorites = true }: P
             </tr>
           </thead>
           <tbody>
-            {filtered.map((i) => (
+            {sorted.map((i) => (
               <tr
                 key={i.id}
                 className="group border-b border-gray-100 transition-colors duration-150 last:border-0 hover:bg-emerald-50/40"
@@ -339,12 +398,12 @@ export default function InternshipTable({ internships, showFavorites = true }: P
           </tbody>
         </table>
 
-        {filtered.length === 0 && <EmptyState />}
+        {sorted.length === 0 && <EmptyState />}
       </div>
 
       {/* ── Mobile / tablet cards ─────────────────────────────────── */}
       <div className="space-y-3 md:hidden">
-        {filtered.map((i) => (
+        {sorted.map((i) => (
           <div
             key={i.id}
             className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm"

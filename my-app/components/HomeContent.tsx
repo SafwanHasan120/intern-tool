@@ -62,7 +62,7 @@ export default function HomeContent({ internships }: HomeContentProps) {
         </div>
       </div>
 
-      <InternshipTable internships={displayedInternships} showFavorites />
+      <InternshipTable internships={displayedInternships} showFavorites onlyFavorites={view === 'favorites'} />
     </main>
   );
 }
