@@ -3,6 +3,7 @@ import { Playfair_Display, Montserrat } from "next/font/google";
 import "./globals.css";
 import { ResumeProvider } from "@/context/ResumeContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
+import { TailorProvider } from "@/context/TailorContext";
 import { AuthProvider } from "@/context/AuthContext";
 import NavBar from "@/components/NavBar";
 import ResumeModal from "@/components/ResumeModal";
@@ -35,11 +36,13 @@ export default function RootLayout({
       <body className="min-h-screen antialiased">
         <AuthProvider>
           <FavoritesProvider>
-            <ResumeProvider>
-              <NavBar />
-              <ResumeModal />
-              {children}
-            </ResumeProvider>
+            <TailorProvider>
+              <ResumeProvider>
+                <NavBar />
+                <ResumeModal />
+                {children}
+              </ResumeProvider>
+            </TailorProvider>
           </FavoritesProvider>
         </AuthProvider>
       </body>

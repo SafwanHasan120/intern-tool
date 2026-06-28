@@ -2,15 +2,8 @@
 
 import { useResume } from '@/context/ResumeContext';
 
-// Add new adjustment fields here — they render automatically and persist via context.
-const ADJUSTMENT_FIELDS: { key: string; label: string; placeholder: string }[] = [
-  { key: 'tone', label: 'Tone', placeholder: 'e.g. concise, formal, enthusiastic' },
-  { key: 'focus', label: 'Focus', placeholder: 'e.g. backend systems, ML research' },
-  { key: 'keywords', label: 'Keywords', placeholder: 'comma-separated keywords to emphasize' },
-];
-
 export default function ResumeModal() {
-  const { settings, isOpen, updateLatex, updateAdjustment, close } = useResume();
+  const { settings, isOpen, updateLatex, close } = useResume();
 
   if (!isOpen) return null;
 
@@ -73,27 +66,6 @@ export default function ResumeModal() {
               onChange={(e) => updateLatex(e.target.value)}
               className="w-full resize-y rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-3 font-mono text-sm leading-relaxed text-gray-900 placeholder:text-gray-500 transition-all duration-300 focus:border-accent focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
             />
-          </div>
-
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
-            {ADJUSTMENT_FIELDS.map((field) => (
-              <div key={field.key} className="last:sm:col-span-2">
-                <label
-                  htmlFor={`adj-${field.key}`}
-                  className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500"
-                >
-                  {field.label}
-                </label>
-                <input
-                  id={`adj-${field.key}`}
-                  type="text"
-                  placeholder={field.placeholder}
-                  value={String(settings.adjustments[field.key] ?? '')}
-                  onChange={(e) => updateAdjustment(field.key, e.target.value)}
-                  className="w-full rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 transition-all duration-300 focus:border-accent focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
-                />
-              </div>
-            ))}
           </div>
         </div>
 

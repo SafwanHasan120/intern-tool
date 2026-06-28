@@ -7,14 +7,12 @@ interface ResumeContextValue {
   settings: ResumeSettings;
   isOpen: boolean;
   updateLatex: (latex: string) => void;
-  updateAdjustment: (key: string, value: unknown) => void;
   open: () => void;
   close: () => void;
 }
 
 const DEFAULT_SETTINGS: ResumeSettings = {
   latex: '',
-  adjustments: { tone: '', focus: '', keywords: '' },
 };
 
 const ResumeContext = createContext<ResumeContextValue | null>(null);
@@ -27,16 +25,12 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
     setSettings((s) => ({ ...s, latex }));
   }, []);
 
-  const updateAdjustment = useCallback((key: string, value: unknown) => {
-    setSettings((s) => ({ ...s, adjustments: { ...s.adjustments, [key]: value } }));
-  }, []);
-
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
 
   return (
     <ResumeContext.Provider
-      value={{ settings, isOpen, updateLatex, updateAdjustment, open, close }}
+      value={{ settings, isOpen, updateLatex, open, close }}
     >
       {children}
     </ResumeContext.Provider>

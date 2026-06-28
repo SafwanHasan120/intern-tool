@@ -95,6 +95,13 @@ export function parseDate(str: string): number {
   return 0;
 }
 
+// Format a date from epoch ms to "Month Day" format (e.g., "January 15", "December 8")
+export function formatDateToMonthDay(dateMs: number): string {
+  if (dateMs === 0) return '—';
+  const date = new Date(dateMs);
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+}
+
 // Split a markdown table row into trimmed cells, dropping the leading/trailing pipe delimiters.
 function splitRow(line: string): string[] {
   // Split on unescaped pipes.

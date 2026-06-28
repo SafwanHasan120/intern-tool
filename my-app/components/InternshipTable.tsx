@@ -5,6 +5,9 @@ import Link from 'next/link';
 import Fuse from 'fuse.js';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useAuth } from '@/context/AuthContext';
+import { useTailor } from '@/context/TailorContext';
+import { useResume } from '@/context/ResumeContext';
+import { formatDateToMonthDay } from '@/lib/scraper';
 import type { Internship } from '@/lib/types';
 
 interface Props {
@@ -112,8 +115,12 @@ export default function InternshipTable({ internships, showFavorites = true, onl
   const [activeLocs, setActiveLocs] = useState<Set<string>>(new Set());
   const [activeRoles, setActiveRoles] = useState<Set<string>>(new Set());
   const [sortDir, setSortDir] = useState<SortDirection>(null);
+  const [tailoring, setTailoring] = useState<Map<string, boolean>>(new Map());
+  const [tailorErrors, setTailorErrors] = useState<Map<string, string>>(new Map());
   const { isFavorite, toggleFavorite } = useFavorites();
   const { user } = useAuth();
+  const { getResult, setResult } = useTailor();
+  const { settings: resumeSettings } = useResume();
 
   // Reset filters when switching to Favorites view
   useEffect(() => {
@@ -196,6 +203,70 @@ export default function InternshipTable({ internships, showFavorites = true, onl
     setQuery('');
     setActiveLocs(new Set());
     setActiveRoles(new Set());
+  };
+
+  const handleTailor = async (internship: Internship) => {
+    if (!user) return;
+
+    const internshipId = internship.id;
+    setTailoring((prev) => new Map(prev).set(internshipId, true));
+    setTailorErrors((prev) => {
+      const next = new Map(prev);
+      next.delete(internshipId);
+      return next;
+    });
+
+    try {
+      const response = await fetch('/api/tailor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          internshipId,
+          appUrl: internship.appUrl,
+          latex: resumeSettings.latex,
+          uid: user.uid,
+        }),
+      });
+
+      const data = (await response.json()) as {
+        error?: string;
+        message?: string;
+        latex?: string;
+      };
+
+      if (!response.ok) {
+        const errorCode = data.error || 'unknown';
+        let errorMessage = 'Something went wrong. Please try again.';
+
+        if (errorCode === 'jd_scrape_failed') {
+          errorMessage = "Couldn't read that job page. Try a different link.";
+        } else if (errorCode === 'rate_limited') {
+          errorMessage = 'Daily limit reached (5/5). Resets at midnight UTC.';
+        }
+
+        setTailorErrors((prev) => new Map(prev).set(internshipId, errorMessage));
+        return;
+      }
+
+      if (data.latex) {
+        setResult({
+          internshipId,
+          latex: data.latex,
+          tailoredAt: Date.now(),
+        });
+      }
+    } catch (error) {
+      console.error('Tailor error:', error);
+      setTailorErrors((prev) =>
+        new Map(prev).set(internshipId, 'Something went wrong. Please try again.')
+      );
+    } finally {
+      setTailoring((prev) => {
+        const next = new Map(prev);
+        next.delete(internshipId);
+        return next;
+      });
+    }
   };
 
   return (
@@ -312,14 +383,15 @@ export default function InternshipTable({ internships, showFavorites = true, onl
                   <CaretIcon direction={sortDir === 'desc' ? 'down' : sortDir === 'asc' ? 'up' : null} className="h-3.5 w-3.5" />
                 </button>
               </th>
+              <th className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
+                Apply
+              </th>
               {showFavorites && (
                 <th className="px-6 py-4 text-center">
                   <HeartIcon className="h-4 w-4 text-gray-400 mx-auto" />
                 </th>
               )}
-              <th className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
-                Apply
-              </th>
+              
               <th className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
                 Tailor
               </th>
@@ -331,52 +403,39 @@ export default function InternshipTable({ internships, showFavorites = true, onl
                 key={i.id}
                 className="group border-b border-gray-100 transition-colors duration-150 last:border-0 hover:bg-emerald-50/40"
               >
-                <td className="px-6 py-4 align-middle">
+                <td className="px-3 py-4 align-middle">
                   {i.companyUrl ? (
                     <a
                       href={i.companyUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-semibold text-gray-900 decoration-emerald-300 decoration-2 underline-offset-4 transition-colors hover:text-accent hover:underline"
+                      className="font-semibold text-gray-900 decoration-emerald-300 decoration-2 underline-offset-4 transition-colors hover:text-accent hover:underline line-clamp-2"
                     >
                       {i.company}
                     </a>
                   ) : (
-                    <span className="font-semibold text-gray-900">{i.company}</span>
+                    <span className="font-semibold text-gray-900 line-clamp-2">{i.company}</span>
                   )}
                 </td>
-                <td className="max-w-xs px-6 py-4 align-middle text-sm text-gray-600">
+                <td className="px-3 py-4 align-middle text-sm text-gray-600">
                   {i.role}
                 </td>
-                <td className="px-6 py-4 align-middle">
+                <td className="px-3 py-4 align-middle">
                   <span className="inline-flex items-center gap-1.5 text-sm text-gray-500">
                     <PinIcon className="h-3.5 w-3.5 shrink-0 text-gray-300" />
                     {i.location}
                   </span>
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 align-middle text-sm tabular-nums text-gray-500">
-                  {i.datePosted}
+                <td className="whitespace-nowrap px-3 py-4 align-middle text-sm tabular-nums text-gray-500">
+                  {formatDateToMonthDay(i.dateMs)}
                 </td>
-                {showFavorites && (
-                  <td className="px-6 py-4 align-middle text-center">
-                    <button
-                      type="button"
-                      onClick={() => toggleFavorite(i.id)}
-                      className="inline-flex items-center justify-center rounded-full p-2 transition-all duration-200 hover:bg-red-50"
-                      title={isFavorite(i.id) ? 'Remove from favorites' : 'Add to favorites'}
-                      aria-label={isFavorite(i.id) ? 'Remove from favorites' : 'Add to favorites'}
-                    >
-                      <HeartIcon filled={isFavorite(i.id)} className={`h-5 w-5 ${isFavorite(i.id) ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}`} />
-                    </button>
-                  </td>
-                )}
-                <td className="px-6 py-4 align-middle">
+                <td className="px-2 py-4 align-middle">
                   {i.appUrl ? (
                     <a
                       href={i.appUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-4 py-2 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:bg-accent hover:shadow-md"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:bg-accent hover:shadow-md"
                     >
                       Apply
                       <ArrowUpRight className="h-3.5 w-3.5" />
@@ -385,37 +444,86 @@ export default function InternshipTable({ internships, showFavorites = true, onl
                     <span className="text-xs text-gray-500">—</span>
                   )}
                 </td>
-                <td className="px-6 py-4 align-middle">
-                  {user ? (
+                {showFavorites && (
+                  <td className="px-2 py-4 align-middle text-center">
+                    <button
+                      type="button"
+                      onClick={() => toggleFavorite(i.id)}
+                      className="inline-flex items-center justify-center rounded-full p-1.5 transition-all duration-200 hover:bg-red-50"
+                      title={isFavorite(i.id) ? 'Remove from favorites' : 'Add to favorites'}
+                      aria-label={isFavorite(i.id) ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <HeartIcon filled={isFavorite(i.id)} className={`h-5 w-5 ${isFavorite(i.id) ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}`} />
+                    </button>
+                  </td>
+                )}
+                <td className="px-3 py-4 align-middle">
+                  {!user ? (
+                    <Link
+                      href="/login"
+                      title="Sign in to use Tailor"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-all"
+                    >
+                      Sign In
+                    </Link>
+                  ) : !resumeSettings.latex.trim() ? (
                     <button
                       type="button"
                       disabled
-                      title="Coming soon"
-                      className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-gray-200 px-4 py-2 text-xs font-medium text-gray-400 hover:border-gray-300"
+                      title="Add resume first"
+                      className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-400"
+                    >
+                      <SparkIcon className="h-3.5 w-3.5" />
+                      Add resume first
+                    </button>
+                  ) : getResult(i.id) ? (
+                    <button
+                      type="button"
+                      onClick={() => {}}
+                      title="View tailored resume"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-all"
+                    >
+                      <SparkIcon className="h-3.5 w-3.5" />
+                      View
+                    </button>
+                  ) : tailoring.get(i.id) ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-400"
+                    >
+                      <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.25" />
+                        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Tailoring…
+                    </button>
+                  ) : tailorErrors.get(i.id) ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTailorErrors((prev) => {
+                          const next = new Map(prev);
+                          next.delete(i.id);
+                          return next;
+                        });
+                        handleTailor(i);
+                      }}
+                      title={tailorErrors.get(i.id)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:border-red-300 hover:bg-red-100 transition-all"
+                    >
+                      <SparkIcon className="h-3.5 w-3.5" />
+                      Failed — retry?
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleTailor(i)}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-accent transition-all"
                     >
                       <SparkIcon className="h-3.5 w-3.5" />
                       Tailor
                     </button>
-                  ) : (
-                    <Link
-                      href="/login"
-                      title="Sign in to use Tailor"
-                      className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-all"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-3.5 w-3.5"
-                        aria-hidden="true"
-                      >
-                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3" />
-                      </svg>
-                      Sign in
-                    </Link>
                   )}
                 </td>
               </tr>
@@ -451,7 +559,7 @@ export default function InternshipTable({ internships, showFavorites = true, onl
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <span className="whitespace-nowrap text-xs tabular-nums text-gray-500">
-                  {i.datePosted}
+                  {formatDateToMonthDay(i.dateMs)}
                 </span>
                 {showFavorites && (
                   <button
@@ -486,16 +594,7 @@ export default function InternshipTable({ internships, showFavorites = true, onl
               ) : (
                 <span className="flex-1 text-center text-xs text-gray-500">No link</span>
               )}
-              {user ? (
-                <button
-                  type="button"
-                  disabled
-                  className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-gray-200 px-4 py-2.5 text-xs font-medium text-gray-400 hover:border-gray-300"
-                >
-                  <SparkIcon className="h-3.5 w-3.5" />
-                  Tailor
-                </button>
-              ) : (
+              {!user ? (
                 <Link
                   href="/login"
                   className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-xs font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-all"
@@ -514,6 +613,61 @@ export default function InternshipTable({ internships, showFavorites = true, onl
                   </svg>
                   Sign in
                 </Link>
+              ) : !resumeSettings.latex.trim() ? (
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-gray-200 px-4 py-2.5 text-xs font-medium text-gray-400"
+                >
+                  <SparkIcon className="h-3.5 w-3.5" />
+                  Add resume first
+                </button>
+              ) : getResult(i.id) ? (
+                <button
+                  type="button"
+                  onClick={() => {}}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-4 py-2.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-all"
+                >
+                  <SparkIcon className="h-3.5 w-3.5" />
+                  View
+                </button>
+              ) : tailoring.get(i.id) ? (
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-gray-200 px-4 py-2.5 text-xs font-medium text-gray-400"
+                >
+                  <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.25" />
+                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Tailoring…
+                </button>
+              ) : tailorErrors.get(i.id) ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTailorErrors((prev) => {
+                      const next = new Map(prev);
+                      next.delete(i.id);
+                      return next;
+                    });
+                    handleTailor(i);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-medium text-red-600 hover:border-red-300 hover:bg-red-100 transition-all"
+                >
+                  <SparkIcon className="h-3.5 w-3.5" />
+                  Failed — retry?
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleTailor(i)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-4 py-2.5 text-xs font-medium text-white hover:bg-accent transition-all"
+                >
+                  <SparkIcon className="h-3.5 w-3.5" />
+                  Tailor
+                </button>
               )}
             </div>
           </div>

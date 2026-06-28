@@ -16,5 +16,4 @@ export interface Internship {
 
 export interface ResumeSettings {
   latex: string;
-  adjustments: Record<string, unknown>;
 }
