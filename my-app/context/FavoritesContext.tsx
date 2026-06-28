@@ -1,6 +1,8 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
+import { saveFavoritesToFirestore, loadFavoritesFromFirestore } from '@/lib/firestore-sync';
 
 interface FavoritesContextValue {
   favorites: Set<string>;
@@ -15,27 +17,60 @@ const FavoritesContext = createContext<FavoritesContextValue | null>(null);
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
-  // Load from localStorage on mount
+  // Load from Firestore (if logged in) or localStorage (if not)
   useEffect(() => {
-    const stored = localStorage.getItem('internship-favorites');
-    if (stored) {
-      try {
-        const ids = JSON.parse(stored) as string[];
-        setFavorites(new Set(ids));
-      } catch {
-        // ignore parse errors
+    const loadFavorites = async () => {
+      if (user) {
+        // User is logged in - load from Firestore
+        const stored = await loadFavoritesFromFirestore(user.uid);
+        if (stored) {
+          setFavorites(stored);
+        } else {
+          // No Firestore data yet - try to migrate from localStorage
+          const localStored = localStorage.getItem('internship-favorites');
+          if (localStored) {
+            try {
+              const ids = JSON.parse(localStored) as string[];
+              setFavorites(new Set(ids));
+            } catch {
+              // ignore parse errors
+            }
+          }
+        }
+      } else {
+        // User is not logged in - load from localStorage
+        const localStored = localStorage.getItem('internship-favorites');
+        if (localStored) {
+          try {
+            const ids = JSON.parse(localStored) as string[];
+            setFavorites(new Set(ids));
+          } catch {
+            // ignore parse errors
+          }
+        }
       }
-    }
-    setIsLoading(false);
-  }, []);
+      setIsLoading(false);
+    };
 
-  // Persist to localStorage whenever favorites changes
+    loadFavorites();
+  }, [user?.uid, user]);
+
+  // Persist to Firestore (if logged in) and localStorage (always)
   useEffect(() => {
     if (!isLoading) {
+      // Always save to localStorage as backup
       localStorage.setItem('internship-favorites', JSON.stringify(Array.from(favorites)));
+
+      // Also save to Firestore if user is logged in
+      if (user) {
+        saveFavoritesToFirestore(user.uid, favorites).catch((error) => {
+          console.error('Failed to save favorites to Firestore:', error);
+        });
+      }
     }
-  }, [favorites, isLoading]);
+  }, [favorites, isLoading, user]);
 
   const isFavorite = useCallback((id: string) => favorites.has(id), [favorites]);
 

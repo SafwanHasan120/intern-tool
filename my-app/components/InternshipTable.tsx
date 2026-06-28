@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTailor } from '@/context/TailorContext';
 import { useResume } from '@/context/ResumeContext';
 import { formatDateToMonthDay } from '@/lib/scraper';
+import TailorModal from '@/components/TailorModal';
 import type { Internship } from '@/lib/types';
 
 interface Props {
@@ -117,6 +118,7 @@ export default function InternshipTable({ internships, showFavorites = true, onl
   const [sortDir, setSortDir] = useState<SortDirection>(null);
   const [tailoring, setTailoring] = useState<Map<string, boolean>>(new Map());
   const [tailorErrors, setTailorErrors] = useState<Map<string, string>>(new Map());
+  const [viewTarget, setViewTarget] = useState<Internship | null>(null);
   const { isFavorite, toggleFavorite } = useFavorites();
   const { user } = useAuth();
   const { getResult, setResult } = useTailor();
@@ -479,7 +481,7 @@ export default function InternshipTable({ internships, showFavorites = true, onl
                   ) : getResult(i.id) ? (
                     <button
                       type="button"
-                      onClick={() => {}}
+                      onClick={() => setViewTarget(i)}
                       title="View tailored resume"
                       className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-all"
                     >
@@ -625,7 +627,7 @@ export default function InternshipTable({ internships, showFavorites = true, onl
               ) : getResult(i.id) ? (
                 <button
                   type="button"
-                  onClick={() => {}}
+                  onClick={() => setViewTarget(i)}
                   className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-4 py-2.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-all"
                 >
                   <SparkIcon className="h-3.5 w-3.5" />
@@ -679,6 +681,12 @@ export default function InternshipTable({ internships, showFavorites = true, onl
           </div>
         )}
       </div>
+
+      <TailorModal
+        result={viewTarget ? getResult(viewTarget.id) : null}
+        internship={viewTarget}
+        onClose={() => setViewTarget(null)}
+      />
     </div>
   );
 }
