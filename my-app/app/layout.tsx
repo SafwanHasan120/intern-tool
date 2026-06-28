@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, Montserrat } from "next/font/google";
 import "./globals.css";
 import { ResumeProvider } from "@/context/ResumeContext";
+import { FavoritesProvider } from "@/context/FavoritesContext";
 import NavBar from "@/components/NavBar";
 import ResumeModal from "@/components/ResumeModal";
 
@@ -31,11 +32,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfair.variable} ${montserrat.variable}`}>
       <body className="min-h-screen antialiased">
-        <ResumeProvider>
-          <NavBar />
-          <ResumeModal />
-          {children}
-        </ResumeProvider>
+        <FavoritesProvider>
+          <ResumeProvider>
+            <NavBar />
+            <ResumeModal />
+            {children}
+          </ResumeProvider>
+        </FavoritesProvider>
       </body>
     </html>
   );

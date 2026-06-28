@@ -10,12 +10,9 @@ export default function NavBar() {
       <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-12">
         {/* Wordmark */}
         <div className="flex items-baseline gap-2.5">
-          <span className="font-serif text-xl font-semibold tracking-tight text-gray-900 sm:text-2xl">
-            Summer&nbsp;<span className="text-accent">’27</span>
-          </span>
-          <span className="hidden text-[11px] font-medium uppercase tracking-[0.22em] text-gray-500 sm:inline">
-            Internships
-          </span>
+          <h1 className="font-serif text-[1.75rem] font-medium tracking-[-0.02em] text-gray-900">
+            Summer <span className="text-accent">’27</span> Internships
+          </h1>
         </div>
 
         {/* Action */}

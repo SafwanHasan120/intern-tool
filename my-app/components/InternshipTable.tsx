@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from 'react';
 import Fuse from 'fuse.js';
+import { useFavorites } from '@/context/FavoritesContext';
 import type { Internship } from '@/lib/types';
 
 interface Props {
   internships: Internship[];
+  showFavorites?: boolean;
 }
 
 // 8 role buckets, matched by regex against i.role.
@@ -59,16 +61,31 @@ function SparkIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+function HeartIcon({ filled, className }: { filled?: boolean; className?: string }) {
+  if (filled) {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+  );
+}
 
 const PILL_BASE =
   'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all duration-200 cursor-pointer select-none';
 const PILL_ON = 'border-transparent bg-gray-900 text-white shadow-sm';
 const PILL_OFF = 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:text-gray-900';
 
-export default function InternshipTable({ internships }: Props) {
+export default function InternshipTable({ internships, showFavorites = true }: Props) {
   const [query, setQuery] = useState('');
   const [activeLocs, setActiveLocs] = useState<Set<string>>(new Set());
   const [activeRoles, setActiveRoles] = useState<Set<string>>(new Set());
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const fuse = useMemo(
     () =>
@@ -221,14 +238,29 @@ export default function InternshipTable({ internships }: Props) {
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50/60">
-              {['Company', 'Position', 'Location', 'Posted', '', ''].map((h, idx) => (
-                <th
-                  key={idx}
-                  className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500"
-                >
-                  {h}
+              <th className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
+                Company
+              </th>
+              <th className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
+                Position
+              </th>
+              <th className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
+                Location
+              </th>
+              <th className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
+                Posted
+              </th>
+              {showFavorites && (
+                <th className="px-6 py-4 text-center">
+                  <HeartIcon className="h-4 w-4 text-gray-400 mx-auto" />
                 </th>
-              ))}
+              )}
+              <th className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
+                Apply
+              </th>
+              <th className="px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
+                Tailor
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -263,6 +295,19 @@ export default function InternshipTable({ internships }: Props) {
                 <td className="whitespace-nowrap px-6 py-4 align-middle text-sm tabular-nums text-gray-500">
                   {i.datePosted}
                 </td>
+                {showFavorites && (
+                  <td className="px-6 py-4 align-middle text-center">
+                    <button
+                      type="button"
+                      onClick={() => toggleFavorite(i.id)}
+                      className="inline-flex items-center justify-center rounded-full p-2 transition-all duration-200 hover:bg-red-50"
+                      title={isFavorite(i.id) ? 'Remove from favorites' : 'Add to favorites'}
+                      aria-label={isFavorite(i.id) ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <HeartIcon filled={isFavorite(i.id)} className={`h-5 w-5 ${isFavorite(i.id) ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}`} />
+                    </button>
+                  </td>
+                )}
                 <td className="px-6 py-4 align-middle">
                   {i.appUrl ? (
                     <a
@@ -320,9 +365,22 @@ export default function InternshipTable({ internships }: Props) {
                 )}
                 <p className="mt-1 text-sm leading-snug text-gray-600">{i.role}</p>
               </div>
-              <span className="shrink-0 whitespace-nowrap text-xs tabular-nums text-gray-500">
-                {i.datePosted}
-              </span>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="whitespace-nowrap text-xs tabular-nums text-gray-500">
+                  {i.datePosted}
+                </span>
+                {showFavorites && (
+                  <button
+                    type="button"
+                    onClick={() => toggleFavorite(i.id)}
+                    className="inline-flex items-center justify-center rounded-full p-2 transition-all duration-200 hover:bg-red-50"
+                    title={isFavorite(i.id) ? 'Remove from favorites' : 'Add to favorites'}
+                    aria-label={isFavorite(i.id) ? 'Remove from favorites' : 'Add to favorites'}
+                  >
+                    <HeartIcon filled={isFavorite(i.id)} className={`h-4 w-4 ${isFavorite(i.id) ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}`} />
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-gray-500">
