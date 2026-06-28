@@ -1,8 +1,10 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
+import Link from 'next/link';
 import Fuse from 'fuse.js';
 import { useFavorites } from '@/context/FavoritesContext';
+import { useAuth } from '@/context/AuthContext';
 import type { Internship } from '@/lib/types';
 
 interface Props {
@@ -111,6 +113,7 @@ export default function InternshipTable({ internships, showFavorites = true, onl
   const [activeRoles, setActiveRoles] = useState<Set<string>>(new Set());
   const [sortDir, setSortDir] = useState<SortDirection>(null);
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { user } = useAuth();
 
   // Reset filters when switching to Favorites view
   useEffect(() => {
@@ -383,15 +386,37 @@ export default function InternshipTable({ internships, showFavorites = true, onl
                   )}
                 </td>
                 <td className="px-6 py-4 align-middle">
-                  <button
-                    type="button"
-                    disabled
-                    title="Coming soon"
-                    className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-gray-200 px-4 py-2 text-xs font-medium text-gray-300"
-                  >
-                    <SparkIcon className="h-3.5 w-3.5" />
-                    Tailor
-                  </button>
+                  {user ? (
+                    <button
+                      type="button"
+                      disabled
+                      title="Coming soon"
+                      className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-gray-200 px-4 py-2 text-xs font-medium text-gray-400 hover:border-gray-300"
+                    >
+                      <SparkIcon className="h-3.5 w-3.5" />
+                      Tailor
+                    </button>
+                  ) : (
+                    <Link
+                      href="/login"
+                      title="Sign in to use Tailor"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-all"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-3.5 w-3.5"
+                        aria-hidden="true"
+                      >
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3" />
+                      </svg>
+                      Sign in
+                    </Link>
+                  )}
                 </td>
               </tr>
             ))}
@@ -461,14 +486,35 @@ export default function InternshipTable({ internships, showFavorites = true, onl
               ) : (
                 <span className="flex-1 text-center text-xs text-gray-500">No link</span>
               )}
-              <button
-                type="button"
-                disabled
-                className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-gray-200 px-4 py-2.5 text-xs font-medium text-gray-300"
-              >
-                <SparkIcon className="h-3.5 w-3.5" />
-                Tailor
-              </button>
+              {user ? (
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-gray-200 px-4 py-2.5 text-xs font-medium text-gray-400 hover:border-gray-300"
+                >
+                  <SparkIcon className="h-3.5 w-3.5" />
+                  Tailor
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-xs font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-all"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-3.5 w-3.5"
+                    aria-hidden="true"
+                  >
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3" />
+                  </svg>
+                  Sign in
+                </Link>
+              )}
             </div>
           </div>
         ))}
