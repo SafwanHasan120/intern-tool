@@ -3,7 +3,8 @@ import type { Internship } from './types';
 const MAX_RESULTS = 1000;
 
 // Deduplicate by appUrl (keep first seen, O(n)), then score and sort descending.
-export function rankInternships(internships: Internship[], userLocation = ''): Internship[] {
+// Scoring formula: recency (0.6) + prestige (0.4) with link health & expiration multipliers
+export function rankInternships(internships: Internship[], _userLocation = ''): Internship[] {
   // 1. Dedup by appUrl. Rows without an appUrl keep their fallback id.
   const seen = new Set<string>();
   const unique: Internship[] = [];
@@ -25,14 +26,26 @@ export function rankInternships(internships: Internship[], userLocation = ''): I
   }
   const span = max - min;
 
-  const locLower = userLocation.trim().toLowerCase();
-
   const scoreOf = (i: Internship): number => {
-    const recency = i.dateMs > 0 && span > 0 ? (i.dateMs - min) / span : i.dateMs > 0 ? 1 : 0;
+    // Base score: recency (0.6) + prestige (0.4)
+    const recency =
+      i.dateMs > 0 && span > 0 ? (i.dateMs - min) / span : i.dateMs > 0 ? 1 : 0;
     const prestige = i.prestigeScore; // 0 | 0.5 | 1.0
-    const locationMatch =
-      locLower && i.location.toLowerCase().includes(locLower) ? 1 : 0;
-    return recency * 0.5 + prestige * 0.3 + locationMatch * 0.2;
+    let baseScore = recency * 0.6 + prestige * 0.4;
+
+    // Apply link health multiplier: 1.0 if healthy, 0.8 if invalid
+    const linkHealthMult =
+      i.linkHealth && (i.linkHealth === 'not-found' || i.linkHealth === 'server-error' || i.linkHealth === 'timeout')
+        ? 0.8
+        : 1.0;
+    baseScore *= linkHealthMult;
+
+    // Apply expiration penalty: 0.1x if expired
+    if (i.isExpired) {
+      baseScore *= 0.1;
+    }
+
+    return baseScore;
   };
 
   // 3. Sort descending by score.

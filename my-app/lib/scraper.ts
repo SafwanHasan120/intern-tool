@@ -1,10 +1,33 @@
 import type { Internship } from './types';
 import { prestigeOf } from './companies';
+import { normalizeCompanyName } from './companyNormalizer';
+import { detectExpiration } from './expirationDetector';
+import { fetchWithRetry } from './retryManager';
+import { initRateLimiter } from './rateLimiter';
+import sourcesData from './sources.json';
 
-export const REPOS = [
+// Initialize rate limiter on module load
+initRateLimiter({
+  maxConcurrentGlobal: 30,
+  maxConcurrentPerHost: 5,
+  minDelayBetweenRequestsMs: 100,
+});
+
+// Legacy fallback if sources.json fails to load
+const FALLBACK_REPOS = [
   'https://raw.githubusercontent.com/vanshb03/Summer2027-Internships/main/README.md',
   'https://raw.githubusercontent.com/sndsh404/summer-2027-internships/main/README.md',
 ];
+
+function loadSources() {
+  try {
+    const sources = sourcesData.sources || [];
+    return sources.filter((s) => s.enabled).map((s) => s.url);
+  } catch {
+    console.warn('Failed to load sources.json, using fallback repos');
+    return FALLBACK_REPOS;
+  }
+}
 
 // Derive a short repo slug ("owner/repo") from a raw GitHub URL for the `source` field.
 function repoSlug(url: string): string {
@@ -196,18 +219,35 @@ function parseMarkdown(md: string, source: string): Internship[] {
 }
 
 async function scrapeRepo(url: string): Promise<Internship[]> {
-  const res = await fetch(url, { next: { revalidate: 3600 } });
+  const res = await fetchWithRetry(url, {
+    next: { revalidate: 3600 },
+    maxRetries: 3,
+    timeoutMs: 10000,
+  });
   if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
   const md = await res.text();
-  return parseMarkdown(md, repoSlug(url));
+  const parsed = parseMarkdown(md, repoSlug(url));
+
+  // Enhance with normalization and expiration detection
+  return parsed.map((internship) => ({
+    ...internship,
+    expirationReason: detectExpiration(internship.dateMs).reason,
+    isExpired: detectExpiration(internship.dateMs).isExpired,
+  }));
 }
 
 export async function scrapeAllRepos(): Promise<Internship[]> {
-  const results = await Promise.allSettled(REPOS.map(scrapeRepo));
+  const repos = loadSources();
+  const results = await Promise.allSettled(repos.map(scrapeRepo));
   const all: Internship[] = [];
+
   for (const r of results) {
-    if (r.status === 'fulfilled') all.push(...r.value);
-    else console.error('Scrape failed:', r.reason);
+    if (r.status === 'fulfilled') {
+      all.push(...r.value);
+    } else {
+      console.error('Scrape failed:', r.reason);
+    }
   }
+
   return all;
 }
