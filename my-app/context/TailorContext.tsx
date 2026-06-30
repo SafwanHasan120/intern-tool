@@ -1,17 +1,24 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
+import {
+  saveTailorResultToFirestore,
+  loadTailorResultsFromFirestore,
+  deleteTailorResultFromFirestore,
+  type TailorResult,
+} from '@/lib/firestore-sync';
 
-export interface TailorResult {
-  internshipId: string;
-  latex: string;
-  tailoredAt: number;
-}
+export { type TailorResult } from '@/lib/firestore-sync';
 
 interface TailorContextValue {
   getResult: (internshipId: string) => TailorResult | null;
   setResult: (result: TailorResult) => void;
   clearResult: (internshipId: string) => void;
+  isLoading: boolean;
+  viewTarget: string | null;
+  openView: (internshipId: string) => void;
+  closeView: () => void;
 }
 
 const TailorContext = createContext<TailorContextValue | null>(null);
@@ -19,27 +26,26 @@ const TailorContext = createContext<TailorContextValue | null>(null);
 export function TailorProvider({ children }: { children: ReactNode }) {
   const [results, setResults] = useState<Map<string, TailorResult>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
+  const [viewTarget, setViewTarget] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  // Load from localStorage on mount
+  // Load from Firestore when user logs in
   useEffect(() => {
-    const stored = localStorage.getItem('tailor-results');
-    if (stored) {
-      try {
-        const data = JSON.parse(stored) as Array<[string, TailorResult]>;
-        setResults(new Map(data));
-      } catch {
-        // ignore parse errors
+    const loadResults = async () => {
+      if (user) {
+        const loaded = await loadTailorResultsFromFirestore(user.uid);
+        setResults(loaded);
+      } else {
+        setResults(new Map());
       }
-    }
-    setIsLoading(false);
-  }, []);
+      setIsLoading(false);
+    };
 
-  // Persist to localStorage whenever results change
-  useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem('tailor-results', JSON.stringify(Array.from(results.entries())));
-    }
-  }, [results, isLoading]);
+    loadResults();
+  }, [user?.uid, user]);
+
+  // Note: Firestore persistence happens in setResult and clearResult callbacks below,
+  // not in this effect. This ensures we only save when explicitly changing data.
 
   const getResult = useCallback(
     (internshipId: string) => results.get(internshipId) || null,
@@ -47,8 +53,18 @@ export function TailorProvider({ children }: { children: ReactNode }) {
   );
 
   const setResult = useCallback((result: TailorResult) => {
-    setResults((prev) => new Map(prev).set(result.internshipId, result));
-  }, []);
+    console.log('[TailorContext] setResult called with:', { internshipId: result.internshipId, latexLength: result.latex.length });
+    setResults((prev) => {
+      const next = new Map(prev).set(result.internshipId, result);
+      console.log('[TailorContext] Results updated. Total results:', next.size);
+      return next;
+    });
+    // Save to Firestore if user is logged in
+    if (user) {
+      console.log('[TailorContext] Saving to Firestore for uid:', user.uid);
+      saveTailorResultToFirestore(user.uid, result);
+    }
+  }, [user]);
 
   const clearResult = useCallback((internshipId: string) => {
     setResults((prev) => {
@@ -56,10 +72,22 @@ export function TailorProvider({ children }: { children: ReactNode }) {
       next.delete(internshipId);
       return next;
     });
+    // Delete from Firestore if user is logged in
+    if (user) {
+      deleteTailorResultFromFirestore(user.uid, internshipId);
+    }
+  }, [user]);
+
+  const openView = useCallback((internshipId: string) => {
+    setViewTarget(internshipId);
+  }, []);
+
+  const closeView = useCallback(() => {
+    setViewTarget(null);
   }, []);
 
   return (
-    <TailorContext.Provider value={{ getResult, setResult, clearResult }}>
+    <TailorContext.Provider value={{ getResult, setResult, clearResult, isLoading, viewTarget, openView, closeView }}>
       {children}
     </TailorContext.Provider>
   );

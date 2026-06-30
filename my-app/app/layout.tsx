@@ -7,6 +7,7 @@ import { TailorProvider } from "@/context/TailorContext";
 import { AuthProvider } from "@/context/AuthContext";
 import NavBar from "@/components/NavBar";
 import ResumeModal from "@/components/ResumeModal";
+import TailorModal from "@/components/TailorModal";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -40,6 +41,7 @@ export default function RootLayout({
               <ResumeProvider>
                 <NavBar />
                 <ResumeModal />
+                <TailorModal />
                 {children}
               </ResumeProvider>
             </TailorProvider>

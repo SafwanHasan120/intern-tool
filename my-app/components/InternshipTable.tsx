@@ -8,7 +8,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useTailor } from '@/context/TailorContext';
 import { useResume } from '@/context/ResumeContext';
 import { formatDateToMonthDay } from '@/lib/scraper';
-import TailorModal from '@/components/TailorModal';
 import type { Internship } from '@/lib/types';
 
 interface Props {
@@ -118,10 +117,9 @@ export default function InternshipTable({ internships, showFavorites = true, onl
   const [sortDir, setSortDir] = useState<SortDirection>(null);
   const [tailoring, setTailoring] = useState<Map<string, boolean>>(new Map());
   const [tailorErrors, setTailorErrors] = useState<Map<string, string>>(new Map());
-  const [viewTarget, setViewTarget] = useState<Internship | null>(null);
   const { isFavorite, toggleFavorite } = useFavorites();
   const { user } = useAuth();
-  const { getResult, setResult } = useTailor();
+  const { getResult, setResult, openView } = useTailor();
   const { settings: resumeSettings } = useResume();
 
   // Reset filters when switching to Favorites view
@@ -211,6 +209,8 @@ export default function InternshipTable({ internships, showFavorites = true, onl
     if (!user) return;
 
     const internshipId = internship.id;
+    console.log('[Tailor] Starting for internship:', internshipId);
+
     setTailoring((prev) => new Map(prev).set(internshipId, true));
     setTailorErrors((prev) => {
       const next = new Map(prev);
@@ -219,6 +219,7 @@ export default function InternshipTable({ internships, showFavorites = true, onl
     });
 
     try {
+      console.log('[Tailor] Sending request to /api/tailor');
       const response = await fetch('/api/tailor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -236,6 +237,9 @@ export default function InternshipTable({ internships, showFavorites = true, onl
         latex?: string;
       };
 
+      console.log('[Tailor] Response status:', response.status);
+      console.log('[Tailor] Response data:', data);
+
       if (!response.ok) {
         const errorCode = data.error || 'unknown';
         let errorMessage = 'Something went wrong. Please try again.';
@@ -246,19 +250,27 @@ export default function InternshipTable({ internships, showFavorites = true, onl
           errorMessage = 'Daily limit reached (5/5). Resets at midnight UTC.';
         }
 
+        console.log('[Tailor] Error:', errorMessage);
         setTailorErrors((prev) => new Map(prev).set(internshipId, errorMessage));
         return;
       }
 
       if (data.latex) {
+        console.log('[Tailor] Setting result with LaTeX length:', data.latex.length);
         setResult({
           internshipId,
           latex: data.latex,
           tailoredAt: Date.now(),
         });
+        console.log('[Tailor] Result set successfully');
+      } else {
+        console.log('[Tailor] No LaTeX in response data');
+        setTailorErrors((prev) =>
+          new Map(prev).set(internshipId, 'No LaTeX returned from API')
+        );
       }
     } catch (error) {
-      console.error('Tailor error:', error);
+      console.error('[Tailor] Unexpected error:', error);
       setTailorErrors((prev) =>
         new Map(prev).set(internshipId, 'Something went wrong. Please try again.')
       );
@@ -481,7 +493,7 @@ export default function InternshipTable({ internships, showFavorites = true, onl
                   ) : getResult(i.id) ? (
                     <button
                       type="button"
-                      onClick={() => setViewTarget(i)}
+                      onClick={() => openView(i.id)}
                       title="View tailored resume"
                       className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-all"
                     >
@@ -627,7 +639,7 @@ export default function InternshipTable({ internships, showFavorites = true, onl
               ) : getResult(i.id) ? (
                 <button
                   type="button"
-                  onClick={() => setViewTarget(i)}
+                  onClick={() => openView(i.id)}
                   className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-4 py-2.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-all"
                 >
                   <SparkIcon className="h-3.5 w-3.5" />
@@ -682,11 +694,6 @@ export default function InternshipTable({ internships, showFavorites = true, onl
         )}
       </div>
 
-      <TailorModal
-        result={viewTarget ? getResult(viewTarget.id) : null}
-        internship={viewTarget}
-        onClose={() => setViewTarget(null)}
-      />
     </div>
   );
 }
