@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Montserrat } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next"
 import { ResumeProvider } from "@/context/ResumeContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { TailorProvider } from "@/context/TailorContext";
@@ -47,6 +48,7 @@ export default function RootLayout({
             </TailorProvider>
           </FavoritesProvider>
         </AuthProvider>
+        <Analytics/>
       </body>
     </html>
   );
