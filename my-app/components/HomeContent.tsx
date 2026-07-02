@@ -31,9 +31,12 @@ export default function HomeContent({ internships }: HomeContentProps) {
 
   return (
     <main className="mx-auto w-full max-w-7xl px-5 pb-24 sm:px-8 lg:px-12">
-      
+      <div className="mt-16 mb-12">
+        <p className="text-lg font-medium text-gray-700">Summer 2027 internships, curated and searchable.</p>
+      </div>
+
       {/* View tabs */}
-      <div className="mb-8 mt-12 flex items-center gap-3">
+      <div className="mb-8 flex items-center gap-3">
         <div className="flex gap-2">
           <button
             type="button"
